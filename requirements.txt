@@ -1,0 +1,26 @@
+# Sentinel — CPU-first image authenticity & duplicate detection
+# Pinned to versions verified on Python 3.14 / Windows 11
+
+fastapi==0.121.3
+uvicorn==0.38.0
+pydantic==2.14.3
+pydantic-settings==2.12.0
+sqlalchemy==2.0.47
+
+opencv-python==4.12.0.88
+pillow==12.3.0
+numpy==2.3.4
+imagehash==4.3.2
+PyWavelets==1.10.0
+scipy==1.16.3
+
+scikit-learn==1.8.0
+
+torch==2.9.1+cpu
+torchvision==0.24.1
+
+faiss-cpu==1.13.2
+
+streamlit==1.52.2
+
+pytest==8.3.2
