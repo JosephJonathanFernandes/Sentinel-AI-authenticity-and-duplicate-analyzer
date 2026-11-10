@@ -49,3 +49,10 @@ sentinel/reports/*.pdf
 
 # Local config
 .env
+
+# Application runtime data
+quarantine/
+sentinel.db
+
+# Environment markers
+.python-version
