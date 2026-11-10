@@ -10,6 +10,7 @@ from sentinel.app.config import settings
 from sentinel.app.database.database import get_session
 from sentinel.app.database import repository as repo
 from sentinel.app.ai_detection.inference import AIClassifier, LABEL_UNCERTAIN
+from sentinel.app.ai_detection.explainability import GradCAMExplainer
 from .common import (
     format_size,
     format_dimensions,
@@ -110,6 +111,38 @@ def render_ai_detection_page() -> None:
         "AI detection is never 100% certain."
     )
 
+    # ---- Grad-CAM explainability ----
+    st.divider()
+    st.subheader("Explain with Grad-CAM")
+    st.caption(
+        "Grad-CAM produces a class-activation heatmap showing which image "
+        "regions influenced the model's prediction. Heatmaps are computed "
+        "from real gradients — they are never fabricated."
+    )
+    explain_path = st.text_input(
+        "Image path for Grad-CAM",
+        placeholder="e.g. C:\\Users\\Joseph\\Pictures\\photo.jpg",
+        help="Full path to a single image file.",
+    )
+    col_exp, col_exp_info = st.columns([1, 4])
+    with col_exp:
+        explain_btn = st.button(
+            "Generate heatmap",
+            type="secondary",
+            use_container_width=True,
+            disabled=not model_exists,
+        )
+
+    if explain_btn:
+        if not explain_path:
+            st.error("Please enter an image path.")
+        else:
+            ep = Path(explain_path)
+            if not ep.exists():
+                st.error(f"File not found: {explain_path}")
+            else:
+                _run_gradcam(ep)
+
 
 def _run_single_inference(path: Path) -> None:
     """Run AI inference on one image and display the result."""
@@ -195,3 +228,58 @@ def _run_single_inference(path: Path) -> None:
         st.success("Result saved to database.")
     except Exception as exc:
         st.warning(f"Could not save to database: {exc}")
+
+
+def _run_gradcam(path: Path) -> None:
+    """Run Grad-CAM explainability on one image and display heatmap."""
+    explainer = GradCAMExplainer(
+        model_path=Path(settings.ai_model_path),
+        image_size=settings.ai_image_size,
+    )
+
+    with st.spinner("Generating Grad-CAM heatmap..."):
+        try:
+            result = explainer.explain_path(path)
+        except Exception as exc:
+            st.error(f"Grad-CAM failed: {exc}")
+            return
+
+    if result.error:
+        st.error(result.error)
+        return
+
+    # Display original + heatmap side by side
+    col1, col2 = st.columns(2)
+    with col1:
+        preview = load_preview_image(path, max_size=300)
+        if preview:
+            st.image(preview, caption=f"Original: {path.name}", use_container_width=True)
+        else:
+            st.caption("(preview unavailable)")
+    with col2:
+        if result.overlay is not None:
+            # Convert BGR to RGB for Streamlit display
+            import cv2
+            overlay_rgb = cv2.cvtColor(result.overlay, cv2.COLOR_BGR2RGB)
+            st.image(
+                overlay_rgb,
+                caption=f"Grad-CAM heatmap (α=0.5)",
+                use_container_width=True,
+            )
+        else:
+            st.caption("(heatmap unavailable)")
+
+    # Metrics
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Classification", result.label.replace("_", " ").title())
+    c2.metric("AI probability", f"{result.ai_probability:.1%}")
+    c3.metric("Confidence", f"{result.confidence:.1%}")
+
+    st.caption(
+        "Red/yellow regions contributed most to the prediction; blue regions "
+        "contributed least. Heatmap is a gradient-based explanation, not "
+        "definitive proof of AI generation."
+    )
+
+    explainer.close()
+

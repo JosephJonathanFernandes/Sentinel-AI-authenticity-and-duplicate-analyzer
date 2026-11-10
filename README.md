@@ -74,7 +74,7 @@ paid APIs are required. No dedicated GPU is needed.
 |------------|---------|
 | **Exact Duplicate Detection** | SHA-256 byte hashing, cross-directory grouping, redundant-storage calculation, highest-resolution primary recommendation |
 | **Near-Duplicate Detection** | pHash / dHash / aHash + Hamming distance, ORB keypoint matching (Lowe's ratio test), weighted combined similarity, configurable threshold |
-| **AI-Generated Detection** | Lightweight CNN (~0.5M params), explicit "uncertain" confidence band, accuracy/precision/recall/F1/ROC-AUC metrics |
+| **AI-Generated Detection** | Lightweight CNN (~0.5M params), explicit "uncertain" confidence band, accuracy/precision/recall/F1/ROC-AUC metrics, Grad-CAM explainability heatmaps |
 | **Image Forensics** | EXIF/metadata extraction, FFT/DCT frequency analysis, noise-residual analysis, composite anomaly score |
 | **Smart Retention** | Per-group recommendation scoring (resolution, file size, metadata, sharpness) with human-readable explanations |
 | **Safe Management** | Quarantine-by-default, explicit confirmation for permanent deletion, restore from quarantine, full audit logging |
@@ -181,6 +181,10 @@ python demo.py
 
 # Run the CPU performance benchmark
 python benchmark.py
+
+# Run with Docker
+docker-compose up --build
+# Then open: http://localhost:8501
 ```
 
 ---
@@ -260,6 +264,13 @@ visit `http://127.0.0.1:8000/docs` for interactive documentation.
   128×128) so latency is acceptable on an i5-class laptop.
 - **Recommendation scoring is heuristic** (resolution + file size + metadata +
   sharpness) and advisory only — the user always makes the final decision.
+- **CI** — GitHub Actions runs the full test suite on Python 3.10–3.13 for
+  every push and pull request (`.github/workflows/test.yml`).
+- **Docker** — `Dockerfile` and `docker-compose.yml` for containerized
+  deployment (`docker-compose up --build`).
+- **Grad-CAM** — Gradient-based explainability heatmaps show which image
+  regions influenced the AI detection prediction
+  (`app/ai_detection/explainability.py`).
 
 ---
 
@@ -297,6 +308,7 @@ Intel i5-1235U:
 | ORB descriptors | ~24 ms/image |
 | ORB matching | ~1 ms/pair |
 | End-to-end scan | ~73 ms/image |
+| Grad-CAM heatmap | ~100 ms/image |
 
 ---
 
@@ -313,6 +325,8 @@ sentinel/
 ├── train_ai.py
 ├── benchmark.py
 ├── demo.py
+├── Dockerfile
+├── docker-compose.yml
 ├── .gitignore
 ├── sentinel.db           # created at runtime (SQLite)
 ├── quarantine/           # created at runtime
@@ -390,6 +404,9 @@ sentinel/
 - [x] Milestone 8 — Image management (recommendations, quarantine, safe deletion)
 - [x] Milestone 9 — Reports (CSV, JSON, PDF)
 - [x] Milestone 10 — Final validation, benchmarking, documentation, demonstration
+- [x] CI — GitHub Actions workflow (`.github/workflows/test.yml`)
+- [x] Docker — `Dockerfile` + `docker-compose.yml`
+- [x] Grad-CAM — Explainability heatmaps for AI detection (`app/ai_detection/explainability.py`)
 
 ---
 

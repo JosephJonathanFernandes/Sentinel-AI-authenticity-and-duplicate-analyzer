@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  sentinel:
+    build: .
+    container_name: sentinel
+    ports:
+      - "8501:8501"
+    environment:
+      - SENTINEL_BATCH_SIZE=50
+      - SENTINEL_AI_IMAGE_SIZE=128
+      - SENTINEL_AI_BATCH_SIZE=32
+    volumes:
+      - ./models:/app/models:rw
+      - ./datasets:/app/datasets:rw
+      - ./reports:/app/reports:rw
+      - ./quarantine:/app/quarantine:rw
+    restart: unless-stopped
